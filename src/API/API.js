@@ -2,7 +2,7 @@ import axios from 'axios';
 
 axios.defaults.baseURL = 'https://pixabay.com/api/';
 
-export const restApi = async (value, page = 1) => {
+export const requestApi = async (value, page = 1) => {
     const response = await axios.get('', {
         params: {
             q: value,

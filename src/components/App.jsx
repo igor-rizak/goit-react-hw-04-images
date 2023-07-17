@@ -1,88 +1,81 @@
-import { Component } from "react";
+import { useState, useEffect } from "react";
 import { Searchbar } from "./Searchbar/Searchbar";
 import { ImageGallery } from "./ImageGallery/ImageGallery";
 import { Button } from "./Button/Button";
 import { Loader } from "./Loader/Loader";
 import { Modal } from "./Modal/Modal";
 import toast, { Toaster } from 'react-hot-toast';
-import { restApi } from "../API/API"
+import { requestApi } from "../API/API"
 
 
-export class App extends Component {
-  state = {
-    list: [],
-    page: 1,
-    query: '',
-    isLoading: false,
-    loadMore: false,
-    modalData: null,
-    isModalVisible: false,
-  };
+export const App = () => {
 
-  async componentDidUpdate(prevProps, prevState) {
-    const { page, query } = this.state;
-    if (page !== prevState.page || query !== prevState.query) {
-      this.setState({ isLoading: true });
-      try {
-        const { hits, totalHits } = await restApi(query, page);
-        if (hits.length === 0) {
-          toast.error(
-            'Sorry, nothing found. Try again'
-          );
+  const [list, setList] = useState([]);
+  const [page, setPage] = useState(1);
+  const [query, setQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadMore, setLoadMore] = useState(false);
+  const [modalData, setModalData] = useState(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      if (page !== 1 || query !== '') {
+        setIsLoading(true);
+        try {
+          const { hits, totalHits } = await requestApi(query, page);
+          if (hits.length === 0) {
+            toast.error('Sorry, nothing found. Try again');
+          }
+          setList(prevState => [...prevState, ...hits]);
+          setLoadMore(page < Math.ceil(totalHits / 12));
+        } catch (error) {
+          console.log(error.message);
+        } finally {
+          setIsLoading(false);
         }
-        this.setState(prevState => ({
-          list: [...prevState.list, ...hits],
-          loadMore: this.state.page < Math.ceil(totalHits / 12),
-        }));
-      } catch (error) {
-        console.log(error.message);
-      } finally {
-        this.setState({ isLoading: false });
       }
+    };
+    
+    fetchData();
+  }, [page, query]);
+
+  const handleChange = (query) => {
+    if (query === '') {
+      setQuery('');
+      setList([]);
+      setPage(1);
+    } else {
+      setQuery(query);
+      setList([]);
+      setPage(1);
     }
-  }
-
-  handleChange = query => {
-    this.setState(prevState => {
-      if (prevState.query === query) {
-        return null
-      } else {
-        return { query, list: [], page: 1 };
-      }
-    });
   };
 
-searchQuery = async() => {
-    console.log(this.state.query);
-    const data = await restApi(this.state.query);
-    const images = data.hits;
-    this.setState({list: images})   
-  }
-
-onClickLoadMore = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const onClickLoadMore = () => {
+    setPage(prevState => prevState + 1);
   };
 
-  modalOpen =  (largeImage, tags) => {
-    this.setState({ modalData: { largeImage, tags }, isModalVisible: true });
+  const modalOpen =  (largeImage, tags) => {
+    setModalData({ largeImage, tags });
+    setIsModalVisible(true);
     document.body.classList.add('no-scroll');
   };
 
-  modalClose = () => {
-    this.setState({ isModalVisible: false, modalData: null });
+  const modalClose = () => {
+    setModalData(null);
+    setIsModalVisible(false);
     document.body.classList.remove('no-scroll');
   }
 
-  render() {
-    const { list, isLoading, loadMore, modalData, isModalVisible } = this.state;
-    return (<div>
-      <Searchbar handleChange={this.handleChange} />
+  return (
+    <div>
+      <Searchbar handleChange={handleChange} />
       <Toaster />
-      {list && (<ImageGallery gallery={list} modalOpen={this.modalOpen} />)}
+      {list.length > 0 && (<ImageGallery gallery={list} modalOpen={modalOpen} />)}
       {isLoading && <Loader />}
-      {loadMore && <Button onClick={this.onClickLoadMore} />}
-      {isModalVisible && (<Modal modalData={modalData} modalClose={this.modalClose} />)}
-    </div >
-    );
-  }
+      {loadMore && <Button onClick={onClickLoadMore} />}
+      {isModalVisible && (<Modal modalData={modalData} modalClose={modalClose} />)}
+    </div>
+  );
 };

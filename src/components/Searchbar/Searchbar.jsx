@@ -1,28 +1,25 @@
-import { Component } from "react";
+import { useState } from "react";
 import toast from 'react-hot-toast';
 import PropTypes from 'prop-types';
 import css from "./searchbar.module.css"
 
-export class Searchbar extends Component {
-    state = {
-        q: '',
-    }
-
-    handleSubmit = async e => {
+export const Searchbar = ({handleChange}) => {
+    const [q, setQ] = useState('');
+    
+    const handleSubmit = async e => {
         e.preventDefault();
         const query = e.target.elements[1].value.trim();
         if (query === '') {
             return toast.error('Please enter key words for search');
         } else {
-            this.props.handleChange(query);
-        this.setState({ q: query })
+            handleChange(query);
+            setQ(query)
         }
     }
 
-    render() {
         return (
             <header className={css.searchbar}>
-                <form className={css.form} onSubmit={this.handleSubmit}>
+                <form className={css.form} onSubmit={handleSubmit}>
                     <button type="submit" className={css.button}>
                         <span className={css.buttonLabel}></span>
                     </button>
@@ -33,14 +30,13 @@ export class Searchbar extends Component {
                         autoComplete="off"
                         autoFocus
                         placeholder="Search images and photos"
-                        defaultValue={this.state.q}
-                        onSubmit={this.handleChange}
+                        defaultValue={q}
+                        onSubmit={handleChange}
                     />
                 </form>
             </header>
         );
     }
-}
 
 Searchbar.propTypes = {
   handleChange: PropTypes.func.isRequired
